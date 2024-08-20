@@ -1,8 +1,14 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const cron = require('node-cron')
 
 const Account = require('../models/Account');
 const sendEmail = require('../utils/sendEmail');
+
+function httpres500(){
+    console.error(`Error resseting password:`, error);
+    res.status(500).json({ success: false, error: 'Internal server error'})
+}
 
 const signUp = async (req, res) => {
     try {
@@ -41,7 +47,7 @@ const signIn = async (req, res) => {
         res.status(200).json({token})
         
     } catch (error){
-        res.status(500).send('Lỗi máy chủ')
+        httpres500(500);
     }
 }
 
@@ -71,15 +77,12 @@ const forgotPassword = async (req, res, next) => {
         res.status(200).json({success: true, message: 'Email đã gửi thành công'})
 
     } catch (error) {
-        console.error('Error sending OTP:' ,error);
-        res.status(500).json({ success: false, error: 'Internal server error'})
+        httpres500();
     }
 }
 
 const resetYourPassword = async (req, res, next) => {
-
     try {
-
         const { newPassword } = req.body;
         const token = req.query.token;
 
@@ -90,7 +93,6 @@ const resetYourPassword = async (req, res, next) => {
         if (!newPassword || newPassword.length < 6) {
             return res.status(400).json({ success: false, message: 'Mật khẩu mới phải có ít nhất 6 ký tự' });
         }
-
 
         const decodedToken = jwt.verify(token, 'your_jwt_secret_key');
 
@@ -121,4 +123,84 @@ const resetYourPassword = async (req, res, next) => {
 
 }
 
-module.exports = { signUp, signIn, forgotPassword, resetYourPassword }
+// Soft delete
+const deleteAccount = async (req, res, next) => {
+    try {
+        const { numberPhone } = req.body;
+        const isMatchNumberPhone = await Account.findOne({ numberPhone });
+        if (!isMatchNumberPhone){
+            return res.status(404).send('NumberPhone của bạn không tồn tại hoặc bị sai');
+        }
+
+        const currentDate = new Date();
+        currentDate.setMonth(currentDate.getMonth() + 1);
+
+        isMatchNumberPhone.deleteAt = currentDate.getTime();
+        isMatchNumberPhone.status = false;
+
+        await isMatchNumberPhone.save();
+        
+        res.status(200).json({
+            success: true,
+            message: `Tài khoản của bạn đã được lịch xóa vào: ${currentDate}, status: ${isMatchNumberPhone.status}`,
+        })
+
+
+    } catch (error) {
+        console.error(`Error resseting password:`, error);
+        res.status(500).json({ success: false, error: 'Internal server error'})
+    }
+}
+
+const deleteAccountHard = async (req, res, next) => {
+    try {
+        const currentDate = Date.now();
+        const result = await Account.deleteMany({deleteAt: { $lte: currentDate }});
+        console.log(`Account ${result.deletedCount} was expired`)
+    } catch (error) {
+        console.error(`Error resseting password:`, error);
+        res.status(500).json({ success: false, error: 'Internal server error'})
+    }
+}
+
+const updateAccount = async (req, res, next ) => {
+    try {
+        const { newPassword, nameOfUser, numberPhone } = req.body;
+        const account = await Account.findOne({ numberPhone });
+
+        if (nameOfUser === account.nameOfUser){
+            res.status(400).json({
+                success: false,
+                message: `Tên tài khoản không được trùng tên tài khoản trước đó`
+            })
+        }
+
+        const isMatch = await bcrypt.compare(newPassword, account.password);
+        if (isMatch) {
+            return res.status(400).send(`Mật khẩu không được trùng mật khẩu trước đó`);
+        }
+
+        account.nameOfUser = nameOfUser;
+        account.password = newPassword;
+        await account.save();
+
+        res.status(200).json({
+            success: true,
+            message: `Tài khoản của bạn đã thay đổi: nameOfUser: ${nameOfUser}`
+        })
+
+    } catch (error) {
+        httpres500();
+    }    
+}
+
+// Node-cron
+cron.schedule('0 0 * * *', () => {
+    console.log('Check and delete expired accounts..');
+    deleteAccountHard();
+}, {
+    scheduled: true,
+    timezone: "Asia/Ho_Chi_Minh"
+});
+
+module.exports = { signUp, signIn, forgotPassword, resetYourPassword, deleteAccount, deleteAccountHard, updateAccount }
