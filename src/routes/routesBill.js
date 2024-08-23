@@ -1,11 +1,14 @@
 const express = require('express');
-const { createBill, getBill, deleteBill, updateBill } = require('../controllers/BillController')
+
+const { createBill, getBill, deleteBill, deleteHard } = require('../controllers/BillController')
 
 const router = express.Router();
 
-router.post('/Bill', createBill);
-router.get('/Bill/:codeBill', getBill);
-router.delete('/Bill/delete/', deleteBill);
-router.put('Bill/update', updateBill)
+router.post('/createBill', createBill);
 
-module.export = router;
+router.get('/Bill/delete/', deleteBill);
+router.get('/Bill/:numberPhone', getBill);
+
+router.delete('/Bill/deleteHard', deleteHard);
+
+module.exports = router;

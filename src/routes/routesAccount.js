@@ -10,4 +10,5 @@ router.get('/resetYourPassword', resetYourPassword)
 router.post('/deleteAccount', deleteAccount);
 router.delete('/deleteAccountHard', deleteAccountHard)
 router.put('/updateAccount', updateAccount);
+
 module.exports = router;

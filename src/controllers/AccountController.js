@@ -25,7 +25,8 @@ const signUp = async (req, res) => {
         res.status(201).json({message: `Account created successfully`, account: newAccount});
 
     } catch (error) {
-        res.status(500).json({message: 'Error creating account ', error})
+        console.error(`Error resseting password:`, error);
+        res.status(500).json({ success: false, error: 'Internal server error'})
     }
 }
 
@@ -47,7 +48,8 @@ const signIn = async (req, res) => {
         res.status(200).json({token})
         
     } catch (error){
-        httpres500(500);
+        console.error(`Error resseting password:`, error);
+        res.status(500).json({ success: false, error: 'Internal server error'})
     }
 }
 
@@ -77,7 +79,8 @@ const forgotPassword = async (req, res, next) => {
         res.status(200).json({success: true, message: 'Email đã gửi thành công'})
 
     } catch (error) {
-        httpres500();
+        console.error(`Error resseting password:`, error);
+        res.status(500).json({ success: false, error: 'Internal server error'})
     }
 }
 
@@ -156,7 +159,7 @@ const deleteAccountHard = async (req, res, next) => {
     try {
         const currentDate = Date.now();
         const result = await Account.deleteMany({deleteAt: { $lte: currentDate }});
-        console.log(`Account ${result.deletedCount} was expired`)
+        res.status(200).json({message: `Account ${result.deletedCount} was expired`})
     } catch (error) {
         console.error(`Error resseting password:`, error);
         res.status(500).json({ success: false, error: 'Internal server error'})
@@ -190,7 +193,8 @@ const updateAccount = async (req, res, next ) => {
         })
 
     } catch (error) {
-        httpres500();
+        console.error(`Error resseting password:`, error);
+        res.status(500).json({ success: false, error: 'Internal server error'})
     }    
 }
 

@@ -1,4 +1,4 @@
-import mongoose, { Schema } from "mongoose";
+const mongoose = require('mongoose')
 
 const schema = new mongoose.Schema(
     {
@@ -8,7 +8,7 @@ const schema = new mongoose.Schema(
             unique: true
         },
 
-        sumofBill: {
+        sumOfBill: {
             type: Number,
             required: true,
             min: 0
@@ -30,9 +30,18 @@ const schema = new mongoose.Schema(
 
         createAt: {
             type: Date,
+            default: Date.now()
         },
+
+        deleteAt: {
+            type: Date
+        },
+        
+        status: {
+            type: Boolean
+        }
     }
 )
 
-const Bill = Bill.model('Bill', Schema);
+const Bill = mongoose.model('Bill', schema);
 module.exports = Bill;
